@@ -1,6 +1,7 @@
 import copy
 
 import numpy as np
+
 import opytimizer.math.random as r
 import opytimizer.utils.history as h
 import opytimizer.utils.logging as l
@@ -46,18 +47,6 @@ class BA(Optimizer):
 
         # Pulse rate
         self._r = 0.5
-
-        # Particles' frequencies
-        self._frequency = None
-
-        # Particles' velocities
-        self._velocity = None
-
-        # Particles' loudnesses
-        self._loudness = None
-
-        # Particles' pulse rates
-        self._pulse_rate = None
 
         # Now, we need to build this class up
         self._build(hyperparams)
@@ -111,54 +100,6 @@ class BA(Optimizer):
     @r.setter
     def r(self, r):
         self._r = r
-
-    @property
-    def frequency(self):
-        """np.array: Particles' current frequencies.
-
-        """
-
-        return self._frequency
-
-    @frequency.setter
-    def frequency(self, frequency):
-        self._frequency = frequency
-
-    @property
-    def velocity(self):
-        """np.array: Particles' current velocities.
-
-        """
-
-        return self._velocity
-
-    @velocity.setter
-    def velocity(self, velocity):
-        self._velocity = velocity
-
-    @property
-    def loudness(self):
-        """np.array: Particles' current loudnesses.
-
-        """
-
-        return self._loudness
-
-    @loudness.setter
-    def loudness(self, loudness):
-        self._loudness = loudness
-
-    @property
-    def pulse_rate(self):
-        """np.array: Particles' current pulse rates.
-
-        """
-
-        return self._pulse_rate
-
-    @pulse_rate.setter
-    def pulse_rate(self, pulse_rate):
-        self._pulse_rate = pulse_rate
 
     def _build(self, hyperparams):
         """This method will serve as the object building process.
@@ -254,12 +195,14 @@ class BA(Optimizer):
 
         return new_position
 
-    def _update(self, agents, best_agent, function, iteration, frequency, velocity, loudness, pulse_rate):
+    def _update(self, agents, best_agent, lower_bound, upper_bound, function, iteration, frequency, velocity, loudness, pulse_rate):
         """Method that wraps Bat Algorithm over all agents and variables.
 
         Args:
             agents (list): List of agents.
             best_agent (Agent): Global best agent.
+            lower_bound (np.array): Array holding lower bounds.
+            upper_bound (np.array): Array holding upper bounds.
             function (Function): A function object.
             iteration (int): Current iteration number.
             frequency (np.array): Array of frequencies.
@@ -297,14 +240,16 @@ class BA(Optimizer):
                 agent.position = best_agent.position + \
                     0.001 * e * np.mean(loudness)
 
+            # Checks agent limits
+            agent.check_limits(lower_bound, upper_bound)
+
             # Evaluates agent
             agent.fit = function.pointer(agent.position)
 
             # Checks if probability is smaller than loudness and if fit is better
             if p < loudness[i] and agent.fit < best_agent.fit:
                 # Copying the new solution to space's best agent
-                best_agent.position = copy.deepcopy(agent.position)
-                best_agent.fit = copy.deepcopy(agent.fit)
+                best_agent = copy.deepcopy(agent)
 
                 # Increasing pulse rate (Equation 6)
                 pulse_rate[i] = self.r * (1 - np.exp(-alpha * iteration))
@@ -325,19 +270,19 @@ class BA(Optimizer):
         """
 
         # Instanciating array of frequencies
-        self.frequency = r.generate_uniform_random_number(
+        frequency = r.generate_uniform_random_number(
             self.f_min, self.f_max, space.n_agents)
 
         # Instanciating array of velocities
-        self.velocity = np.zeros(
+        velocity = np.zeros(
             (space.n_agents, space.n_variables, space.n_dimensions))
 
         # And also an array of loudnesses
-        self.loudness = r.generate_uniform_random_number(
+        loudness = r.generate_uniform_random_number(
             0, self.A, space.n_agents)
 
         # Finally, an array of pulse rates
-        self.pulse_rate = r.generate_uniform_random_number(
+        pulse_rate = r.generate_uniform_random_number(
             0, self.r, space.n_agents)
 
         # Initial search space evaluation
@@ -351,8 +296,8 @@ class BA(Optimizer):
             logger.info(f'Iteration {t+1}/{space.n_iterations}')
 
             # Updating agents
-            self._update(space.agents, space.best_agent, function, t,
-                         self.frequency, self.velocity, self.loudness, self.pulse_rate)
+            self._update(space.agents, space.best_agent, space.lb, space.ub,
+                         function, t, frequency, velocity, loudness, pulse_rate)
 
             # Checking if agents meets the bounds limits
             space.check_bound_limits(space.agents, space.lb, space.ub)
@@ -361,7 +306,7 @@ class BA(Optimizer):
             self._evaluate(space, function)
 
             # Every iteration, we need to dump the current space agents
-            history.dump(space.agents)
+            history.dump(space.agents, space.best_agent)
 
             logger.info(f'Fitness: {space.best_agent.fit}')
             logger.info(f'Position: {space.best_agent.position}')

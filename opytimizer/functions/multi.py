@@ -13,30 +13,28 @@ class Multi(Function):
 
     """
 
-    def __init__(self, functions=None, method=None):
+    def __init__(self, functions=[], weights=[], method='weight_sum'):
         """Initialization method.
 
         Args:
             functions (list): This should be a list of pointers to functions
                 that will return the fitness value.
+            weights (list): List of weights for weighted sum strategy.
             method (str): Multi-objective function strategy method
-                (non-preference, a priori, a posteriori, interactive).
+                (weight_sum, ).
 
         """
 
         logger.info('Overriding class: Function -> Multi.')
 
         # Creating a list to hold further Function's instances
-        self._functions = []
+        self._functions = functions
 
-        # Creates an strategy method (non-preference, a priori, a posteriori, interactive)
+        # Creating weights (when used with 'weight_sum' strategy).
+        self._weights = weights
+
+        # Creates an strategy method (weight_sum, )
         self._method = method
-
-        # We will also need a pointer to behold our multi-objective strategy
-        self._pointer = None
-
-        # Indicates whether the current object is built or not
-        self._built = False
 
         # Now, we need to build this class up
         self._build(functions, method)
@@ -56,38 +54,20 @@ class Multi(Function):
         self._functions = functions
 
     @property
+    def weights(self):
+        """list: Weights (when used with 'weight_sum' strategy).
+
+        """
+
+        return self._weights
+
+    @property
     def method(self):
-        """str: Strategy method (non-preference, a priori, a posteriori, interactive).
+        """str: Strategy method (weight_sum, ).
 
         """
 
         return self._method
-
-    @property
-    def pointer(self):
-        """callable: A pointer to point to our actual multi objective function.
-
-        Note that this will be the one used by Opytimizer's.
-
-        """
-
-        return self._pointer
-
-    @pointer.setter
-    def pointer(self, pointer):
-        self._pointer = pointer
-
-    @property
-    def built(self):
-        """bool: A boolean to indicate whether the multi function is built.
-
-        """
-
-        return self._built
-
-    @built.setter
-    def built(self, built):
-        self._built = built
 
     def _build(self, functions, method):
         """This method will serve as the object building process.
@@ -153,7 +133,7 @@ class Multi(Function):
         """Creates a multi-objective method strategy as the real pointer.
 
         Args:
-            method (str): A string indicating what strategy method should be used
+            method (str): A string indicating what strategy method should be used.
 
         Returns:
             A callable based on defined strategy.
@@ -161,11 +141,16 @@ class Multi(Function):
         """
 
         def pointer(x):
-            # Iterate through every function
-            for f in self.functions:
-                # Apply current state as function's state
-                x = f.pointer(x)
+            # Check strategy method
+            if method == 'weight_sum':
+                # Defining value to hold strategy
+                z = 0
 
-            return x
+                # Iterate through every function
+                for (f, w) in zip(self.functions, self.weights):
+                    # Apply w * f(x)
+                    z += w * f.pointer(x)
+
+                return z
 
         return pointer

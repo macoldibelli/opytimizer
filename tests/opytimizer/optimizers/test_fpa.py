@@ -2,6 +2,7 @@ import sys
 
 import numpy as np
 import pytest
+
 from opytimizer.core import function
 from opytimizer.optimizers import fpa
 from opytimizer.spaces import search
@@ -74,6 +75,7 @@ def test_fpa_update():
 
     assert search_space.agents[0].position[0] != 0
 
+
 def test_fpa_run():
     def square(x):
         return np.sum(x**2)
@@ -88,4 +90,5 @@ def test_fpa_run():
 
     history = new_fpa.run(search_space, new_function)
 
-    assert len(history.history) > 0
+    assert len(history.agents) > 0
+    assert len(history.best_agent) > 0

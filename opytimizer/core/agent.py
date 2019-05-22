@@ -1,6 +1,7 @@
 import sys
 
 import numpy as np
+
 import opytimizer.utils.logging as l
 
 logger = l.get_logger(__name__)
@@ -20,10 +21,10 @@ class Agent:
 
         """
 
-        logger.info('Creating class: Agent.')
-
-        # Initially, an Agent needs its number of variables and dimensions
+        # Initially, an Agent needs its number of variables
         self._n_variables = n_variables
+
+        # And also, its number of dimensions
         self._n_dimensions = n_dimensions
 
         # Create the position vector based on number of variables and dimensions
@@ -31,12 +32,6 @@ class Agent:
 
         # Fitness value is initialized with float's largest number
         self._fit = sys.float_info.max
-
-        # We will log some important information
-        logger.debug(
-            f'Size: ({self._n_variables}, {self._n_dimensions}) | Fitness: {self._fit}.')
-
-        logger.info('Class created.')
 
     @property
     def n_variables(self):
@@ -77,3 +72,17 @@ class Agent:
     @fit.setter
     def fit(self, fit):
         self._fit = fit
+
+    def check_limits(self, lower_bound, upper_bound):
+        """Checks bounds limits of current agent.
+
+        Args:
+            lower_bound (np.array): Array holding lower bounds.
+            upper_bound (np.array): Array holding upper bounds.
+
+        """
+
+        # Iterate through all decision variables
+        for j, (lb, ub) in enumerate(zip(lower_bound, upper_bound)):
+            # Clip the array based on variables' lower and upper bounds
+            self.position[j] = np.clip(self.position[j], lb, ub)

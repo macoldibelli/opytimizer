@@ -1,6 +1,7 @@
 import numpy as np
-import opytimizer
 import pytest
+
+import opytimizer
 from opytimizer.core import function
 from opytimizer.optimizers import pso
 from opytimizer.spaces import search
@@ -49,4 +50,4 @@ def test_opytimizer_start():
     new_opytimizer = opytimizer.Opytimizer(
         space=new_space, optimizer=new_pso, function=new_function)
 
-    history = new_opytimizer.start()
+    new_opytimizer.start(history=True)

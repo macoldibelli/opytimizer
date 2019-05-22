@@ -2,6 +2,7 @@ import sys
 
 import numpy as np
 import pytest
+
 from opytimizer.core import function
 from opytimizer.optimizers import cs
 from opytimizer.spaces import search
@@ -73,4 +74,5 @@ def test_cs_run():
 
     history = new_cs.run(search_space, new_function)
 
-    assert len(history.history) > 0
+    assert len(history.agents) > 0
+    assert len(history.best_agent) > 0

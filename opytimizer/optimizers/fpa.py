@@ -1,6 +1,7 @@
 import copy
 
 import numpy as np
+
 import opytimizer.math.distribution as d
 import opytimizer.math.random as r
 import opytimizer.utils.history as h
@@ -241,7 +242,7 @@ class FPA(Optimizer):
             self._evaluate(space, function)
 
             # Every iteration, we need to dump the current space agents
-            history.dump(space.agents)
+            history.dump(space.agents, space.best_agent)
 
             logger.info(f'Fitness: {space.best_agent.fit}')
             logger.info(f'Position: {space.best_agent.position}')
